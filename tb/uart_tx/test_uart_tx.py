@@ -1,8 +1,8 @@
 from random import randint
 
 import cocotb
-from cocotb.triggers import FallingEdge, RisingEdge, Timer
 from cocotb.clock import Clock
+from cocotb.triggers import RisingEdge
 
 CLOCKS_PER_BIT = 4
 
@@ -26,11 +26,10 @@ async def wait_one_bit(dut):
 
 
 async def reset_dut(dut):
-    # Reset dut
-    dut.resetn.value = 0;
+    dut.resetn.value = 0
     await RisingEdge(dut.clk)
     await RisingEdge(dut.clk)
-    dut.resetn.value = 1;
+    dut.resetn.value = 1
     await RisingEdge(dut.clk)
     await RisingEdge(dut.clk)
 
