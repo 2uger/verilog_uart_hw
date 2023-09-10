@@ -10,10 +10,12 @@
 #define CLK_PER_BAUD 5
 
 enum State {IDLE, FBIT, RECV, SBIT};
-enum State rx_state = IDLE;
-uint32_t clk_cnt = 0;
-uint32_t bit_idx = 0;
-char rx_val = 0;
+
+static enum State rx_state = IDLE;
+static uint32_t clk_cnt;
+static uint32_t bit_idx;
+static char rx_val;
+static char assert_rx_val;
 
 void uart_rx(char rx)
 {
@@ -49,10 +51,10 @@ void uart_rx(char rx)
         case SBIT:
             clk_cnt++;
             if (clk_cnt > CLK_PER_BAUD) {
-                printf("Received data: %c\n", rx_val);
-                rx_val = 0;
                 rx_state = IDLE;
                 clk_cnt = 0;
+                assert_rx_val = rx_val;
+                rx_val = 0;
             }
             break;
     }
@@ -75,7 +77,11 @@ int main(int argc, char **argv)
             tb->tick();
             uart_rx(tb->m_core->d_o);
         }
+        assert(assert_rx_val == to_send[i]);
     }
+    printf("\n*****************\n");
+    printf("All tests passed!\n");
     printf("Simulation completed!\n");
+    printf("*****************\n");
     delete tb;
 }
