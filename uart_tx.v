@@ -1,4 +1,6 @@
-module uart_tx # (parameter CLOCKS_PER_BIT = 4)
+module uart_tx # (
+    parameter CLOCKS_PER_BIT = 4
+)
                  (input clk, resetn,
                   // Start transmitting
                   input start_i,

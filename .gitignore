@@ -3,3 +3,5 @@ __pycache__/
 sim_build/
 *.vvp
 *.fst
+*.vcd
+obj_dir/
