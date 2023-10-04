@@ -1,6 +1,6 @@
 module uart_tx
 #(parameter
-    CLOCKS_PER_BIT = 16
+    CLOCKS_PER_BIT = 128
 )
 (
     input clk, resetn,

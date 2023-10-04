@@ -1,6 +1,6 @@
 module uart_rx
 #(parameter
-    CLOCKS_PER_BIT = 256
+    CLOCKS_PER_BIT = 128
 )
 (
     input clk, resetn,
