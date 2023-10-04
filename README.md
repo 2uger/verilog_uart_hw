@@ -8,3 +8,7 @@ Install icarus verilog:
 Run tests with:  
 * make --directory=uart_rx
 * make --directory=uart_tx
+
+#### REAL HARDWARE!!!:
+![Alt Text](uart-test.gif)
+
