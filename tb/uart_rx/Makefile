@@ -5,7 +5,7 @@ SIM ?= icarus
 TOPLEVEL_LANG ?= verilog
 WAVES=1
 
-VERILOG_SOURCES += $(PWD)/../../uart_rx.v
+VERILOG_SOURCES += $(PWD)/../../rtl/uart_rx.v
 TOPLEVEL = uart_rx
 MODULE = test_uart_rx
 

@@ -5,3 +5,4 @@ sim_build/
 *.fst
 *.vcd
 obj_dir/
+.venv

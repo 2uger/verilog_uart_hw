@@ -2,21 +2,22 @@ from random import randint
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge
+from cocotb.triggers import RisingEdge, Timer
 
-CLOCKS_PER_BIT = 4
-
+CLOCKS_PER_BIT = 120
 
 @cocotb.test()
 async def uart_rx_test(dut):
+    global CLOCKS_PER_BIT
+    CLOCKS_PER_BIT = dut.CLOCKS_PER_BIT.value
     cocotb.start_soon(Clock(dut.clk, 2, units='ns').start())
 
     await reset_dut(dut)
     # Check reset works
     for _ in range(100):
         data = ''.join([str(randint(0, 1)) for _ in range(8)])
-        #data = '01100110'
         await recv_rx_byte(dut, data)
+        await Timer(10, units='ns')
 
 
 async def wait_one_bit(dut):
@@ -35,7 +36,6 @@ async def reset_dut(dut):
 
 async def recv_rx_byte(dut, input_data):
     dut.serial_i.value = 1
-    # IDLE state
     while True:
         if dut.busy_o.value == 0:
             break
@@ -52,4 +52,5 @@ async def recv_rx_byte(dut, input_data):
     dut.serial_i.value = 1
     await wait_one_bit(dut)
 
-    assert dut.data_o.value == int(input_data[::-1], base=2)
+    assert dut.recv_data_o.value == int(input_data[::-1], base=2)
+
