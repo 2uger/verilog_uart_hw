@@ -6,3 +6,6 @@ sim_build/
 *.vcd
 obj_dir/
 .venv
+build/
+*.log
+*.jou
