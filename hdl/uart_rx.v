@@ -1,16 +1,18 @@
-module uart_rx
-#(parameter
-    CLOCKS_PER_BIT = 128
-)
-(
-    input clk, resetn,
-    input serial_i,
+`timescale 1ns / 1ps
 
-    output reg [7:0] recv_data_o,
-    output reg busy_o,
-    output reg done_o
+module uart_rx #(
+    parameter CLKS_PER_BIT = 128
+) (input clk,
+   input resetn,
+
+   input rx_i,
+
+   output reg [7:0] d_o,
+   output reg busy_o,
+   output reg done_o
 );
-    
+    reg [$clog2(CLKS_PER_BIT)-1:0] timer_cnt;
+
     reg [2:0]  fsm_state;
     localparam IDLE    = 1;
     localparam START   = 2;
@@ -18,34 +20,33 @@ module uart_rx
     localparam STOP    = 4;
     localparam CLEANUP = 5;
 
-    reg [2:0]  bit_idx;
-    reg [$clog2(CLOCKS_PER_BIT)-1:0] timer_cnt;
-    
+    reg [2:0] bit_idx;
+
     always @ (posedge clk) begin
         if (!resetn) begin
             fsm_state <= IDLE;
-            timer_cnt <= {$clog2(CLOCKS_PER_BIT){1'b1}};
+            timer_cnt <= {$clog2(CLKS_PER_BIT){1'b1}};
             bit_idx   <= 0;
 
-            recv_data_o <= 0;
-            busy_o      <= 0;
-            done_o      <= 0;
+            d_o    <= 0;
+            busy_o <= 0;
+            done_o <= 0;
         end else begin
             case (fsm_state)
                 IDLE: begin
                     busy_o <= 0;
                     done_o <= 0;
-                    if (!serial_i) begin
+                    if (!rx_i) begin
                         fsm_state <= START;
-                        timer_cnt <= {$clog2(CLOCKS_PER_BIT){1'b1}};
+                        timer_cnt <= {$clog2(CLKS_PER_BIT){1'b1}};
+                        busy_o    <= 1;
                     end 
                 end
                 START: begin
-                    busy_o <= 1;
-                    // Check in the middle of byte
-                    if (timer_cnt <= (CLOCKS_PER_BIT-1) / 2) begin
-                        if (serial_i == 0) begin
-                            timer_cnt <= {$clog2(CLOCKS_PER_BIT){1'b1}};
+                    /* Check in the middle of byte. */
+                    if (timer_cnt <= (CLKS_PER_BIT-1) / 2) begin
+                        if (rx_i == 0) begin
+                            timer_cnt <= {$clog2(CLKS_PER_BIT){1'b1}};
                             fsm_state <= DATA;
                         end else
                             fsm_state <= IDLE;
@@ -57,8 +58,8 @@ module uart_rx
                 DATA: begin
                     timer_cnt <= timer_cnt - 1;
                     if (!timer_cnt) begin
-                        recv_data_o[bit_idx] <= serial_i;
-                        timer_cnt            <= {$clog2(CLOCKS_PER_BIT){1'b1}};
+                        d_o[bit_idx] <= rx_i;
+                        timer_cnt    <= {$clog2(CLKS_PER_BIT){1'b1}};
 
                         if (bit_idx < 7) begin
                             fsm_state <= DATA;
@@ -71,13 +72,16 @@ module uart_rx
                 end
                 STOP: begin
                     busy_o <= 0;
-                    // Wait for stop bit to finish
+                    /* Wait for stop bit to finish */
                     timer_cnt <= timer_cnt - 1;
                     if (!timer_cnt) begin
-                        timer_cnt <= {$clog2(CLOCKS_PER_BIT){1'b1}};
+                        timer_cnt <= {$clog2(CLKS_PER_BIT){1'b1}};
                         done_o    <= 1;
                         fsm_state <= IDLE;
                     end
+                end
+                default: begin
+                    fsm_state <= IDLE;
                 end
             endcase							
         end
