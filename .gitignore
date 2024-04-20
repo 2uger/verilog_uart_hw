@@ -9,3 +9,5 @@ obj_dir/
 build/
 *.log
 *.jou
+*.env
+*.venv

@@ -20,8 +20,6 @@ set_property strategy Flow_AreaOptimized_high [get_runs synth_1]
 # Setup implementation strategy and properties.
 set_property strategy Performance_ExtraTimingOpt [get_runs impl_1]
 
-exit
-
 # Launch Synthesis and wait on completion
 launch_runs synth_1 -jobs 32
 wait_on_run synth_1
