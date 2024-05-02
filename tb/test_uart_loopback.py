@@ -12,9 +12,10 @@ async def uart_tx_test(dut):
     CLKS_PER_BIT = dut.CLKS_PER_BIT.value
     cocotb.start_soon(Clock(dut.clk, 2, units='ns').start())
 
+    dut.tx_d_i.value = 102
+    dut.tx_e_i.value = 1
     await reset_dut(dut)
-    dut.e_i.value = 1
-    dut.d_i.value = 102
+
     # Check reset works
     for _ in range(1000):
         await RisingEdge(dut.clk)
@@ -30,26 +31,4 @@ async def reset_dut(dut):
     dut.resetn.value = 1
     await RisingEdge(dut.clk)
     await RisingEdge(dut.clk)
-
-
-async def recv_rx_byte(dut, input_data):
-    dut.e_i.value = 1
-
-    while True:
-        if dut.busy_o.value == 0:
-            break
-
-    # Start bit
-    dut.rx_i.value = 0
-    await wait_one_bit(dut)
-
-    for v in input_data:
-        dut.rx_i.value = int(v)
-        await wait_one_bit(dut)
-
-    # Stop bit
-    dut.rx_i.value = 1
-    await wait_one_bit(dut)
-
-    assert dut.d_o.value == int(input_data[::-1], base=2)
 

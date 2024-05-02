@@ -48,7 +48,7 @@ module uart_tx #(
                 load_timer_cnt = 1;
                 if (e_i) begin
                     tx_o = 0;
-                    busy_o    = 1'b1;
+                    busy_o    = 1'b0;
                     data      = d_i;
                     next_state = START;
                 end

@@ -11,7 +11,7 @@ module uart_rx #(
    output reg       busy_o,
    output reg       done_o
 );
-    reg [$clog2(CLKS_PER_BIT)-1:0] timer_cnt;
+    reg [$clog2(CLKS_PER_BIT):0] timer_cnt;
 
     reg [2:0]  fsm_state;
     localparam IDLE    = 1;
