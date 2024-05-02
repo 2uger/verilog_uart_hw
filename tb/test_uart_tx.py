@@ -7,23 +7,21 @@ from cocotb.triggers import RisingEdge, Timer
 CLKS_PER_BIT = 120
 
 @cocotb.test()
-async def uart_rx_test(dut):
+async def uart_tx_test(dut):
     global CLKS_PER_BIT
     CLKS_PER_BIT = dut.CLKS_PER_BIT.value
     cocotb.start_soon(Clock(dut.clk, 2, units='ns').start())
 
     await reset_dut(dut)
+    dut.e_i.value = 1
+    dut.d_i.value = 0xaa
     # Check reset works
-    for _ in range(10):
-        data = ''.join([str(randint(0, 1)) for _ in range(8)])
-        await recv_rx_byte(dut, data)
-        await Timer(10, units='ns')
-
+    for _ in range(1000):
+        await RisingEdge(dut.clk)
 
 async def wait_one_bit(dut):
     for _ in range(CLKS_PER_BIT):
         await RisingEdge(dut.clk)
-
 
 async def reset_dut(dut):
     dut.resetn.value = 0
@@ -35,7 +33,8 @@ async def reset_dut(dut):
 
 
 async def recv_rx_byte(dut, input_data):
-    dut.rx_i.value = 1
+    dut.e_i.value = 1
+
     while True:
         if dut.busy_o.value == 0:
             break
