@@ -13,14 +13,15 @@ module uart_tx #(
     output reg busy_o
 );
     /* Count time between bits. */
-    reg [$clog2(CLKS_PER_BIT)-1:0] timer_cnt;
+    reg [$clog2(CLKS_PER_BIT):0] timer_cnt;
+    reg load_timer_cnt;
 
     reg [2:0] state = 3'b0;
     reg [2:0] next_state = 3'b0;
-    localparam IDLE = 1;
-    localparam START = 2;
-    localparam DATA = 3;
-    localparam STOP = 4;
+    localparam IDLE  = 3'b001;
+    localparam START = 3'b011;
+    localparam DATA  = 3'b010;
+    localparam STOP  = 3'b110;
 
     reg [7:0] data      = 8'b0;
     reg [2:0] bit_idx   = 3'b0;
@@ -28,7 +29,6 @@ module uart_tx #(
     always @(posedge clk) begin
         if (!resetn) begin
             state <= IDLE;
-            next_state <= IDLE;
             data      <= 0;
             bit_idx   <= 0;
             timer_cnt <= CLKS_PER_BIT;
@@ -37,6 +37,7 @@ module uart_tx #(
             busy_o <= 0;
         end else begin
             state <= next_state;
+            timer_cnt <= load_timer_cnt ? CLKS_PER_BIT : (timer_cnt - 1);
         end
     end
 
@@ -45,43 +46,44 @@ module uart_tx #(
             IDLE: begin
                 tx_o      = 1;
                 bit_idx   = 0;
-                timer_cnt = CLKS_PER_BIT;
+                load_timer_cnt = 1;
                 if (e_i) begin
                     busy_o    = 1'b1;
                     data      = d_i;
-                    next_state <= START;
+                    next_state = START;
                 end
             end
             START: begin
+                load_timer_cnt = 0;
                 /* Start bit. */
-                tx_o <= 0;
+                tx_o = 0;
                 /* Wait till start bit finish. */
-                timer_cnt <= timer_cnt - 1;
                 if (timer_cnt == 0) begin
-                    timer_cnt <= CLKS_PER_BIT;
-                    state <= DATA;
+                    load_timer_cnt = 1;
+                    next_state = DATA;
                 end
             end
             DATA: begin
-                tx_o <= data[bit_idx];
-                timer_cnt <= timer_cnt - 1;
+                load_timer_cnt = 0;
+                tx_o = data[bit_idx];
                 if (timer_cnt == 0) begin
-                    timer_cnt <= CLKS_PER_BIT;
-                    state <= bit_idx < 7 ? DATA : STOP;
-                    bit_idx   <= bit_idx < 7 ? bit_idx + 1 : 0;
+                    load_timer_cnt = 1;
+
+                    next_state = bit_idx < 7 ? DATA : STOP;
+                    bit_idx   = bit_idx < 7 ? bit_idx + 1 : 0;
                 end
             end
             STOP: begin
-                tx_o <= 1;
+                load_timer_cnt = 0;
+                tx_o = 1;
                 /* Wait till stop bit finish. */
-                timer_cnt <= timer_cnt - 1;
                 if (timer_cnt == 0) begin
-                    state <= IDLE;
-                    busy_o    <= 0;
+                    next_state = IDLE;
+                    busy_o    = 0;
                 end
             end
             default:
-                state <= IDLE;
+                next_state = IDLE;
         endcase
     end
 endmodule
