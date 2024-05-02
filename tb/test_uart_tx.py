@@ -14,7 +14,7 @@ async def uart_tx_test(dut):
 
     await reset_dut(dut)
     dut.e_i.value = 1
-    dut.d_i.value = 0xaa
+    dut.d_i.value = 102
     # Check reset works
     for _ in range(1000):
         await RisingEdge(dut.clk)

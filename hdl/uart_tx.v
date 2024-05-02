@@ -29,12 +29,7 @@ module uart_tx #(
     always @(posedge clk) begin
         if (!resetn) begin
             state <= IDLE;
-            data      <= 0;
-            bit_idx   <= 0;
             timer_cnt <= CLKS_PER_BIT;
-
-            tx_o   <= 1;
-            busy_o <= 0;
         end else begin
             state <= next_state;
             timer_cnt <= load_timer_cnt ? CLKS_PER_BIT : (timer_cnt - 1);
@@ -42,12 +37,17 @@ module uart_tx #(
     end
 
     always @* begin
+        busy_o = 1'b1;
+        tx_o   = 1'b1;
+
         case (state)
             IDLE: begin
+                busy_o = 1'b0;
                 tx_o      = 1;
                 bit_idx   = 0;
                 load_timer_cnt = 1;
                 if (e_i) begin
+                    tx_o = 0;
                     busy_o    = 1'b1;
                     data      = d_i;
                     next_state = START;
@@ -58,7 +58,7 @@ module uart_tx #(
                 /* Start bit. */
                 tx_o = 0;
                 /* Wait till start bit finish. */
-                if (timer_cnt == 0) begin
+                if (timer_cnt == 1) begin
                     load_timer_cnt = 1;
                     next_state = DATA;
                 end
@@ -79,7 +79,6 @@ module uart_tx #(
                 /* Wait till stop bit finish. */
                 if (timer_cnt == 0) begin
                     next_state = IDLE;
-                    busy_o    = 0;
                 end
             end
             default:
