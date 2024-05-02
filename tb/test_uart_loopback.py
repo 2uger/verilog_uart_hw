@@ -1,10 +1,9 @@
-from random import randint
-
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge, Timer
+from cocotb.triggers import RisingEdge
 
 CLKS_PER_BIT = 120
+TEST_VALUE = 102
 
 @cocotb.test()
 async def uart_tx_test(dut):
@@ -12,17 +11,14 @@ async def uart_tx_test(dut):
     CLKS_PER_BIT = dut.CLKS_PER_BIT.value
     cocotb.start_soon(Clock(dut.clk, 2, units='ns').start())
 
-    dut.tx_d_i.value = 102
+    dut.tx_d_i.value = TEST_VALUE
     dut.tx_e_i.value = 1
     await reset_dut(dut)
 
-    # Check reset works
-    for _ in range(1000):
+    while not dut.rx_done_o.value:
         await RisingEdge(dut.clk)
 
-async def wait_one_bit(dut):
-    for _ in range(CLKS_PER_BIT):
-        await RisingEdge(dut.clk)
+    assert dut.rx_d_o.value == TEST_VALUE
 
 async def reset_dut(dut):
     dut.resetn.value = 0

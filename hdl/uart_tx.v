@@ -16,8 +16,8 @@ module uart_tx #(
     reg [$clog2(CLKS_PER_BIT):0] timer_cnt;
     reg load_timer_cnt;
 
-    reg [2:0] state = 3'b0;
-    reg [2:0] next_state = 3'b0;
+    reg [2:0] state;
+    reg [2:0] next_state;
     localparam IDLE  = 3'b001;
     localparam START = 3'b011;
     localparam DATA  = 3'b010;
@@ -39,7 +39,6 @@ module uart_tx #(
     always @* begin
         busy_o = 1'b1;
         tx_o   = 1'b1;
-
         case (state)
             IDLE: begin
                 busy_o = 1'b0;
@@ -53,11 +52,10 @@ module uart_tx #(
                     next_state = START;
                 end
             end
+            /* Start bit. */
             START: begin
                 load_timer_cnt = 0;
-                /* Start bit. */
                 tx_o = 0;
-                /* Wait till start bit finish. */
                 if (timer_cnt == 1) begin
                     load_timer_cnt = 1;
                     next_state = DATA;
@@ -68,18 +66,15 @@ module uart_tx #(
                 tx_o = data[bit_idx];
                 if (timer_cnt == 0) begin
                     load_timer_cnt = 1;
-
                     next_state = bit_idx < 7 ? DATA : STOP;
                     bit_idx   = bit_idx < 7 ? bit_idx + 1 : 0;
                 end
             end
+            /* Stop bit. */
             STOP: begin
                 load_timer_cnt = 0;
                 tx_o = 1;
-                /* Wait till stop bit finish. */
-                if (timer_cnt == 0) begin
-                    next_state = IDLE;
-                end
+                next_state = (timer_cnt == 0) ? IDLE : STOP;
             end
             default:
                 next_state = IDLE;
