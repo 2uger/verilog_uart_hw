@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module uart_tx #(
-    parameter CLKS_PER_BIT = 4
+    parameter CLKS_PER_BIT = 868
 ) (
     input clk,
     input resetn,
@@ -23,8 +23,8 @@ module uart_tx #(
     localparam DATA  = 3'b010;
     localparam STOP  = 3'b110;
 
-    reg [7:0] data      = 8'b0;
-    reg [2:0] bit_idx   = 3'b0;
+    reg [7:0] data    = 8'b0;
+    reg [2:0] bit_idx = 3'b0;
     reg shift_bit_idx;
 
     always @(posedge clk) begin
@@ -36,10 +36,12 @@ module uart_tx #(
             state     <= next_state;
             timer_cnt <= load_timer_cnt ? CLKS_PER_BIT : (timer_cnt - 1);
             bit_idx   <= shift_bit_idx ? bit_idx + 1 : bit_idx;
+            data      <= e_i ? d_i : data;
         end
     end
 
-    always @* begin
+    always @(*) begin
+        load_timer_cnt = 0;
         busy_o        = 1;
         tx_o          = 1;
         shift_bit_idx = 0;
@@ -50,8 +52,9 @@ module uart_tx #(
                 load_timer_cnt = 1;
                 if (e_i) begin
                     tx_o       = 0;
-                    data       = d_i;
                     next_state = START;
+                end else begin
+                    next_state = IDLE;
                 end
             end
             /* Start bit. */
@@ -61,6 +64,8 @@ module uart_tx #(
                 if (timer_cnt == 1) begin
                     load_timer_cnt = 1;
                     next_state     = DATA;
+                end else begin
+                    next_state = START;
                 end
             end
             DATA: begin
@@ -70,6 +75,8 @@ module uart_tx #(
                     load_timer_cnt = 1;
                     shift_bit_idx  = 1;
                     next_state     = (bit_idx < 7) ? DATA : STOP;
+                end else begin
+                    next_state = DATA;
                 end
             end
             /* Stop bit. */

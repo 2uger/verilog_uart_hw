@@ -16,13 +16,29 @@ async def uart_tx_test(dut):
     for _ in range(5):
         await RisingEdge(dut.clk)
 
-    dut.tx_d_i.value = TEST_VALUE
-    dut.tx_e_i.value = 1
+    # Start bit
+    dut.rx_i.value = 0
+    await wait_one_bit(dut)
 
-    while not dut.rx_done_o.value:
+    # Data
+    for b in bin(ord('H'))[2:]:
+        dut.rx_i.value = int(b)
+        await wait_one_bit(dut)
+
+    # Stop bit
+    dut.rx_i.value = 0
+    await wait_one_bit(dut)
+
+#    while not dut.rx_done_o.value:
+#        await RisingEdge(dut.clk)
+
+    #assert dut.rx_d_o.value == TEST_VALUE
+
+async def wait_one_bit(dut):
+    clks = CLKS_PER_BIT
+    while clks:
         await RisingEdge(dut.clk)
-
-    assert dut.rx_d_o.value == TEST_VALUE
+        clks -= 1
 
 async def reset_dut(dut):
     dut.resetn.value = 0

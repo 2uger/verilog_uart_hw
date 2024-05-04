@@ -1,20 +1,19 @@
 `timescale 1ns / 1ps
 
 module uart_loopback #(
-    parameter CLKS_PER_BIT = 9
+    parameter CLKS_PER_BIT = 868
 ) (
     input clk,
     input resetn,
 
-    input [7:0] tx_d_i,
-    input tx_e_i,
-    output tx_busy_o,
-
-    output [7:0] rx_d_o,
-    output rx_busy_o,
-    output rx_done_o
+    (* mark_debug = "true" *) output tx_o,
+    (* mark_debug = "true" *) input  rx_i
 );
-    wire tx_o;
+    (* mark_debug = "true" *) wire rx_done;
+    (* mark_debug = "true" *) wire tx_busy;
+    (* mark_debug = "true" *) wire [7:0] data;
+
+    (* mark_debug = "true" *) wire rx_busy;
 
     uart_tx #(
         .CLKS_PER_BIT(CLKS_PER_BIT)
@@ -22,11 +21,11 @@ module uart_loopback #(
         .clk(clk),
         .resetn(resetn),
 
-        .e_i(tx_e_i),
-        .d_i(tx_d_i),
+        .e_i(rx_done),
+        .d_i(data),
 
         .tx_o(tx_o),
-        .busy_o(tx_busy_o)
+        .busy_o(tx_busy)
     );
 
     uart_rx #(
@@ -35,11 +34,10 @@ module uart_loopback #(
         .clk(clk),
         .resetn(resetn),
 
-        .rx_i(tx_o),
+        .rx_i(rx_i),
 
-        .d_o(rx_d_o),
-        .busy_o(rx_busy_o),
-        .done_o(rx_done_o)
+        .d_o(data),
+        .busy_o(rx_busy),
+        .done_o(rx_done)
     );
 endmodule
-

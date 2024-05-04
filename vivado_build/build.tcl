@@ -4,7 +4,7 @@ set HDL_SOURCE ../hdl
 set SOURCE_FILES [list \
     "$HDL_SOURCE/uart_tx.v"\
     "$HDL_SOURCE/uart_rx.v"\
-    "$HDL_SOURCE/uart_test.v"\
+    "$HDL_SOURCE/uart_loopback.v"\
 ]
 set DIR_OUTPUT ./build
 file mkdir ${DIR_OUTPUT}

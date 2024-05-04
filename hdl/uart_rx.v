@@ -11,11 +11,11 @@ module uart_rx #(
    output reg       busy_o,
    output reg       done_o
 );
-    reg [$clog2(CLKS_PER_BIT):0] timer_cnt;
-    reg load_timer_cnt;
+    (* mark_debug = "true" *) reg [$clog2(CLKS_PER_BIT):0] timer_cnt;
+    (* mark_debug = "true" *) reg load_timer_cnt;
 
-    reg [2:0]  state;
-    reg [2:0]  next_state;
+    (* mark_debug = "true" *) reg [2:0]  state;
+    (* mark_debug = "true" *) reg [2:0]  next_state;
     localparam IDLE    = 3'b001;
     localparam START   = 3'b011;
     localparam DATA    = 3'b010;
@@ -29,7 +29,6 @@ module uart_rx #(
         if (!resetn) begin
             state     <= IDLE;
             timer_cnt <= CLKS_PER_BIT;
-            d_o       <= 0;
             bit_idx   <= 0;
         end else begin
             state     <= next_state;
@@ -38,17 +37,23 @@ module uart_rx #(
         end
     end
 
+    always @ (posedge clk) begin
+        if (!resetn) begin
+            d_o <= 0;
+        end else begin
+            if (state == DATA) d_o[bit_idx] <= rx_i;
+        end
+    end
+
     always @(*) begin
-        busy_o        = 1;
-        done_o        = 0;
-        shift_bit_idx = 0;
+        busy_o         = 1;
+        done_o         = 0;
+        shift_bit_idx  = 0;
         case (state)
             IDLE: begin
                 load_timer_cnt = 1;
                 busy_o         = 0;
-                if (rx_i == 0) begin
-                    next_state = START;
-                end
+                next_state     = (rx_i == 0) ? START : IDLE;
             end
             START: begin
                 load_timer_cnt = 0;
@@ -60,15 +65,18 @@ module uart_rx #(
                     end else begin
                         next_state = IDLE;
                     end
+                end else begin
+                    next_state = START;
                 end
             end
             DATA: begin
                 load_timer_cnt = 0;
-                d_o[bit_idx]   = rx_i;
                 if (timer_cnt == 0) begin
                     load_timer_cnt = 1;
                     shift_bit_idx  = 1;
                     next_state     = (bit_idx < 7) ? DATA : STOP;
+                end else begin
+                    next_state = DATA;
                 end
             end
             STOP: begin
@@ -79,10 +87,13 @@ module uart_rx #(
                     load_timer_cnt = 1;
                     done_o         = 1;
                     next_state     = IDLE;
+                end else begin
+                    next_state = STOP;
                 end
             end
             default: begin
-                next_state <= IDLE;
+                load_timer_cnt = 0;
+                next_state     = IDLE;
             end
         endcase
     end

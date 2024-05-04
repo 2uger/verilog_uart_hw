@@ -13,3 +13,5 @@ build_clean:
 test:
 	@make -C $(TEST_DIR)
 
+lint:
+	@verilator --lint-only hdl/*.v
