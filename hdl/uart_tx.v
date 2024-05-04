@@ -14,7 +14,6 @@ module uart_tx #(
 );
     /* Count time between bits. */
     reg [$clog2(CLKS_PER_BIT):0] timer_cnt;
-    reg load_timer_cnt;
 
     reg [2:0] state;
     reg [2:0] next_state;
@@ -34,56 +33,46 @@ module uart_tx #(
             bit_idx   <= 0;
         end else begin
             state     <= next_state;
-            timer_cnt <= load_timer_cnt ? CLKS_PER_BIT : (timer_cnt - 1);
             bit_idx   <= shift_bit_idx ? bit_idx + 1 : bit_idx;
             data      <= e_i ? d_i : data;
         end
     end
 
+    assign tx_o = (state == DATA) ? data[bit_idx] : (state == START) ? 0 : 1;
+
+    always @(posedge clk) begin
+        if (!resetn) begin
+            timer_cnt <= CLKS_PER_BIT;
+        end else begin
+            case (state)
+                IDLE:    timer_cnt <= CLKS_PER_BIT;
+                START:   timer_cnt <= (timer_cnt == 1) ? CLKS_PER_BIT : timer_cnt - 1;
+                DATA:    timer_cnt <= (timer_cnt == 0) ? CLKS_PER_BIT : timer_cnt - 1;
+                STOP:    timer_cnt <= timer_cnt - 1;
+                default: timer_cnt <= CLKS_PER_BIT;
+            endcase
+        end
+    end
+
     always @(*) begin
-        load_timer_cnt = 0;
         busy_o        = 1;
-        tx_o          = 1;
         shift_bit_idx = 0;
         case (state)
             IDLE: begin
-                busy_o         = 0;
-                tx_o           = 1;
-                load_timer_cnt = 1;
-                if (e_i) begin
-                    tx_o       = 0;
-                    next_state = START;
-                end else begin
-                    next_state = IDLE;
-                end
+                busy_o     = 0;
+                next_state = e_i ? START : IDLE;
             end
             /* Start bit. */
             START: begin
-                load_timer_cnt = 0;
-                tx_o           = 0;
-                if (timer_cnt == 1) begin
-                    load_timer_cnt = 1;
-                    next_state     = DATA;
-                end else begin
-                    next_state = START;
-                end
+                next_state = (timer_cnt == 1) ? DATA : START;
             end
             DATA: begin
-                load_timer_cnt = 0;
-                tx_o           = data[bit_idx];
-                if (timer_cnt == 0) begin
-                    load_timer_cnt = 1;
-                    shift_bit_idx  = 1;
-                    next_state     = (bit_idx < 7) ? DATA : STOP;
-                end else begin
-                    next_state = DATA;
-                end
+                shift_bit_idx = (timer_cnt == 0) ? 1 : 0;
+                next_state    = (timer_cnt == 0) ? ((bit_idx < 7) ? DATA : STOP) : DATA;
             end
             /* Stop bit. */
             STOP: begin
-                load_timer_cnt = 0;
-                tx_o           = 1;
-                next_state     = (timer_cnt == 0) ? IDLE : STOP;
+                next_state = (timer_cnt == 0) ? IDLE : STOP;
             end
             default:
                 next_state = IDLE;

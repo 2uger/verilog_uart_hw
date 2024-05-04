@@ -38,7 +38,7 @@ module uart_rx #(
         if (!resetn) begin
             d_o <= 0;
         end else begin
-            if ((state == DATA) && shift_bit_idx) d_o[bit_idx] <= rx_i;
+            if ((state == DATA) && shift_bit_idx && (bit_idx != 7)) d_o[bit_idx] <= rx_i;
         end
     end
 

@@ -26,14 +26,19 @@ async def uart_tx_test(dut):
         await wait_one_bit(dut)
 
     # Stop bit
-    dut.rx_i.value = 0
+    dut.rx_i.value = 1
     await wait_one_bit(dut)
 
-#    while not dut.rx_done_o.value:
-#        await RisingEdge(dut.clk)
+    # Wait for receiver
+    while not dut.rx_done_o.value:
+        await RisingEdge(dut.clk)
 
-    #assert dut.rx_d_o.value == TEST_VALUE
-    for _ in range(1000):
+    assert dut.uart_rx.d_o.value == ord('H')
+
+    while not dut.tx_busy.value:
+        await RisingEdge(dut.clk)
+
+    while dut.tx_busy.value:
         await RisingEdge(dut.clk)
 
 async def wait_one_bit(dut):

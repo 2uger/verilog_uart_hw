@@ -9,11 +9,12 @@ module uart_loopback #(
     (* mark_debug = "true" *) output tx_o,
     (* mark_debug = "true" *) input  rx_i
 );
-    (* mark_debug = "true" *) wire rx_done;
     (* mark_debug = "true" *) wire tx_busy;
     (* mark_debug = "true" *) wire [7:0] data;
 
     (* mark_debug = "true" *) wire rx_busy;
+    wire rx_done_o;
+    wire [7:0] rx_d_o;
 
     uart_tx #(
         .CLKS_PER_BIT(CLKS_PER_BIT)
@@ -21,7 +22,7 @@ module uart_loopback #(
         .clk(clk),
         .resetn(resetn),
 
-        .e_i(rx_done),
+        .e_i(rx_done_o),
         .d_i(data),
 
         .tx_o(tx_o),
@@ -38,6 +39,6 @@ module uart_loopback #(
 
         .d_o(data),
         .busy_o(rx_busy),
-        .done_o(rx_done)
+        .done_o(rx_done_o)
     );
 endmodule
