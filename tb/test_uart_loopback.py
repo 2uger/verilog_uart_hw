@@ -21,7 +21,7 @@ async def uart_tx_test(dut):
     await wait_one_bit(dut)
 
     # Data
-    for b in bin(ord('H'))[2:]:
+    for b in (bin(ord('H'))[2:])[::-1]:
         dut.rx_i.value = int(b)
         await wait_one_bit(dut)
 
@@ -33,6 +33,8 @@ async def uart_tx_test(dut):
 #        await RisingEdge(dut.clk)
 
     #assert dut.rx_d_o.value == TEST_VALUE
+    for _ in range(1000):
+        await RisingEdge(dut.clk)
 
 async def wait_one_bit(dut):
     clks = CLKS_PER_BIT

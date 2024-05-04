@@ -12,7 +12,6 @@ module uart_rx #(
    output reg       done_o
 );
     (* mark_debug = "true" *) reg [$clog2(CLKS_PER_BIT):0] timer_cnt;
-    (* mark_debug = "true" *) reg load_timer_cnt;
 
     (* mark_debug = "true" *) reg [2:0]  state;
     (* mark_debug = "true" *) reg [2:0]  next_state;
@@ -28,11 +27,9 @@ module uart_rx #(
     always @ (posedge clk) begin
         if (!resetn) begin
             state     <= IDLE;
-            timer_cnt <= CLKS_PER_BIT;
             bit_idx   <= 0;
         end else begin
             state     <= next_state;
-            timer_cnt <= load_timer_cnt ? CLKS_PER_BIT : timer_cnt - 1;
             bit_idx   <= shift_bit_idx ? bit_idx + 1 : bit_idx;
         end
     end
@@ -41,7 +38,21 @@ module uart_rx #(
         if (!resetn) begin
             d_o <= 0;
         end else begin
-            if (state == DATA) d_o[bit_idx] <= rx_i;
+            if ((state == DATA) && shift_bit_idx) d_o[bit_idx] <= rx_i;
+        end
+    end
+
+    always @(posedge clk) begin
+        if (!resetn) begin
+            timer_cnt <= CLKS_PER_BIT;
+        end else begin
+            case (state)
+                IDLE:    timer_cnt <= CLKS_PER_BIT;
+                START:   timer_cnt <= (timer_cnt <= (CLKS_PER_BIT-1) / 2) ? CLKS_PER_BIT : timer_cnt - 1;
+                DATA:    timer_cnt <= (timer_cnt == 0) ? CLKS_PER_BIT : timer_cnt - 1;
+                STOP:    timer_cnt <= timer_cnt - 1;
+                default: timer_cnt <= CLKS_PER_BIT;
+            endcase
         end
     end
 
@@ -51,48 +62,23 @@ module uart_rx #(
         shift_bit_idx  = 0;
         case (state)
             IDLE: begin
-                load_timer_cnt = 1;
-                busy_o         = 0;
-                next_state     = (rx_i == 0) ? START : IDLE;
+                busy_o     = 0;
+                next_state = (rx_i == 0) ? START : IDLE;
             end
             START: begin
-                load_timer_cnt = 0;
                 /* Check in the middle of the byte. */
-                if (timer_cnt <= (CLKS_PER_BIT-1) / 2) begin
-                    if (rx_i == 0) begin
-                        load_timer_cnt = 1;
-                        next_state     = DATA;
-                    end else begin
-                        next_state = IDLE;
-                    end
-                end else begin
-                    next_state = START;
-                end
+                next_state = (timer_cnt <= (CLKS_PER_BIT-1) / 2) ? ((rx_i == 0) ? DATA : IDLE) : START;
             end
             DATA: begin
-                load_timer_cnt = 0;
-                if (timer_cnt == 0) begin
-                    load_timer_cnt = 1;
-                    shift_bit_idx  = 1;
-                    next_state     = (bit_idx < 7) ? DATA : STOP;
-                end else begin
-                    next_state = DATA;
-                end
+                shift_bit_idx = (timer_cnt == 0) ? 1 : 0;
+                next_state    = (timer_cnt == 0) ? ((bit_idx < 7) ? DATA : STOP) : DATA;
             end
             STOP: begin
-                load_timer_cnt = 0;
-                busy_o         = 1;
                 /* Wait for stop bit to finish */
-                if (timer_cnt == 0) begin
-                    load_timer_cnt = 1;
-                    done_o         = 1;
-                    next_state     = IDLE;
-                end else begin
-                    next_state = STOP;
-                end
+                done_o     = (timer_cnt == 0) ? 1 : 0;
+                next_state = (timer_cnt == 0) ? IDLE : STOP;
             end
             default: begin
-                load_timer_cnt = 0;
                 next_state     = IDLE;
             end
         endcase
