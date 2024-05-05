@@ -9,7 +9,7 @@ module uart_tx #(
     input       e_i,
     input [7:0] d_i,
 
-    output reg tx_o,
+    output wire tx_o,
     output reg busy_o
 );
     /* Count time between bits. */
@@ -29,7 +29,6 @@ module uart_tx #(
     always @(posedge clk) begin
         if (!resetn) begin
             state     <= IDLE;
-            timer_cnt <= CLKS_PER_BIT;
             bit_idx   <= 0;
         end else begin
             state     <= next_state;

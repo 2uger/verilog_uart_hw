@@ -6,13 +6,13 @@ module uart_loopback #(
     input clk,
     input resetn,
 
-    (* mark_debug = "true" *) output tx_o,
-    (* mark_debug = "true" *) input  rx_i
+    output tx_o,
+    input  rx_i
 );
-    (* mark_debug = "true" *) wire tx_busy;
-    (* mark_debug = "true" *) wire [7:0] data;
+    wire tx_busy;
+    wire [7:0] data;
 
-    (* mark_debug = "true" *) wire rx_busy;
+    wire rx_busy;
     wire rx_done_o;
     wire [7:0] rx_d_o;
 

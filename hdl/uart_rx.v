@@ -11,10 +11,10 @@ module uart_rx #(
    output reg       busy_o,
    output reg       done_o
 );
-    (* mark_debug = "true" *) reg [$clog2(CLKS_PER_BIT):0] timer_cnt;
+    reg [$clog2(CLKS_PER_BIT):0] timer_cnt;
 
-    (* mark_debug = "true" *) reg [2:0]  state;
-    (* mark_debug = "true" *) reg [2:0]  next_state;
+    reg [2:0]  state;
+    reg [2:0]  next_state;
     localparam IDLE    = 3'b001;
     localparam START   = 3'b011;
     localparam DATA    = 3'b010;
