@@ -60,6 +60,7 @@ module uart_tx #(
         shift_bit_idx = 0;
         case (state)
             IDLE: begin
+                done_o     = 1;
                 busy_o     = 0;
                 next_state = e_i ? START : IDLE;
             end
@@ -73,7 +74,6 @@ module uart_tx #(
             end
             /* Stop bit. */
             STOP: begin
-                done_o     = 1;
                 next_state = (timer_cnt == 0) ? IDLE : STOP;
             end
             default:
