@@ -10,7 +10,8 @@ module uart_tx #(
     input [7:0] d_i,
 
     output wire tx_o,
-    output reg busy_o
+    output reg busy_o,
+    output reg done_o
 );
     /* Count time between bits. */
     reg [$clog2(CLKS_PER_BIT):0] timer_cnt;
@@ -55,6 +56,7 @@ module uart_tx #(
 
     always @(*) begin
         busy_o        = 1;
+        done_o        = 0;
         shift_bit_idx = 0;
         case (state)
             IDLE: begin
@@ -71,6 +73,7 @@ module uart_tx #(
             end
             /* Stop bit. */
             STOP: begin
+                done_o     = 1;
                 next_state = (timer_cnt == 0) ? IDLE : STOP;
             end
             default:
