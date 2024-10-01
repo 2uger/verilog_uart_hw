@@ -47,7 +47,7 @@ module uart_tx #(
             case (state)
                 IDLE:    timer_cnt <= CLKS_PER_BIT;
                 START:   timer_cnt <= (timer_cnt == 1) ? CLKS_PER_BIT : timer_cnt - 1;
-                DATA:    timer_cnt <= (timer_cnt == 0) ? CLKS_PER_BIT : timer_cnt - 1;
+                DATA:    timer_cnt <= (timer_cnt == 1) ? CLKS_PER_BIT : timer_cnt - 1;
                 STOP:    timer_cnt <= timer_cnt - 1;
                 default: timer_cnt <= CLKS_PER_BIT;
             endcase
@@ -69,12 +69,12 @@ module uart_tx #(
                 next_state = (timer_cnt == 1) ? DATA : START;
             end
             DATA: begin
-                shift_bit_idx = (timer_cnt == 0) ? 1 : 0;
-                next_state    = (timer_cnt == 0) ? ((bit_idx < 7) ? DATA : STOP) : DATA;
+                shift_bit_idx = (timer_cnt == 1) ? 1 : 0;
+                next_state    = (timer_cnt == 1) ? ((bit_idx < 7) ? DATA : STOP) : DATA;
             end
             /* Stop bit. */
             STOP: begin
-                next_state = (timer_cnt == 0) ? IDLE : STOP;
+                next_state = (timer_cnt == 1) ? IDLE : STOP;
             end
             default:
                 next_state = IDLE;
