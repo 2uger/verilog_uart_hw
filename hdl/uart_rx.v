@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module uart_rx #(
-    parameter CLKS_PER_BIT = 868
+    parameter CLKS_PER_BIT = 20
 ) (input clk,
    input resetn,
 
