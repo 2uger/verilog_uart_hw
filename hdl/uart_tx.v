@@ -1,84 +1,156 @@
-`timescale 1ns / 1ps
+// Generator : SpinalHDL v1.10.2a    git head : a348a60b7e8b6a455c72e1536ec3d74a2ea16935
+// Component : UartTx
+// Git hash  : 979bc248ed5ada4589c24995801dbe70a1be69cb
 
-module uart_tx #(
-    parameter CLKS_PER_BIT = 868
-) (
-    input clk,
-    input resetn,
+`timescale 1ns/1ps
 
-    input       e_i,
-    input [7:0] d_i,
-
-    output wire tx_o,
-    output reg busy_o,
-    output reg done_o
+module uart_tx (
+  input  wire          e_i,
+  input  wire [7:0]    d_i,
+  output reg           tx_o,
+  output reg           busy_o,
+  output reg           done_o,
+  input  wire          clk,
+  input  wire          reset
 );
-    /* Count time between bits. */
-    reg [$clog2(CLKS_PER_BIT):0] timer_cnt;
+  localparam UartState_idle = 2'd0;
+  localparam UartState_start = 2'd1;
+  localparam UartState_data = 2'd2;
+  localparam UartState_stop = 2'd3;
 
-    reg [2:0] state;
-    reg [2:0] next_state;
-    localparam IDLE  = 3'b001;
-    localparam START = 3'b011;
-    localparam DATA  = 3'b010;
-    localparam STOP  = 3'b110;
+  reg        [1:0]    state;
+  reg        [7:0]    data;
+  reg        [2:0]    bitIdx;
+  reg                 shiftBitIdx;
+  wire                when_UartTx_l34;
+  wire                when_UartTx_l37;
+  reg        [9:0]    timerCnt_counter;
+  wire                when_UartTx_l48;
+  wire                when_UartTx_l51;
+  wire                when_UartTx_l50;
+  wire                when_UartTx_l74;
+  wire                when_UartTx_l79;
+  wire                when_UartTx_l81;
+  wire                when_UartTx_l89;
+  `ifndef SYNTHESIS
+  reg [39:0] state_string;
+  `endif
 
-    reg [7:0] data    = 8'b0;
-    reg [2:0] bit_idx = 3'b0;
-    reg shift_bit_idx;
 
-    always @(posedge clk) begin
-        if (!resetn) begin
-            state     <= IDLE;
-            bit_idx   <= 0;
-        end else begin
-            state     <= next_state;
-            bit_idx   <= shift_bit_idx ? bit_idx + 1 : bit_idx;
-            data      <= e_i ? d_i : data;
+  `ifndef SYNTHESIS
+  always @(*) begin
+    case(state)
+      UartState_idle : state_string = "idle ";
+      UartState_start : state_string = "start";
+      UartState_data : state_string = "data ";
+      UartState_stop : state_string = "stop ";
+      default : state_string = "?????";
+    endcase
+  end
+  `endif
+
+  assign when_UartTx_l34 = (state == UartState_data);
+  always @(*) begin
+    if(when_UartTx_l34) begin
+      tx_o = data[bitIdx];
+    end else begin
+      if(when_UartTx_l37) begin
+        tx_o = 1'b0;
+      end else begin
+        tx_o = 1'b1;
+      end
+    end
+  end
+
+  assign when_UartTx_l37 = (state == UartState_start);
+  assign when_UartTx_l48 = (state == UartState_idle);
+  assign when_UartTx_l51 = (timerCnt_counter == 10'h0);
+  assign when_UartTx_l50 = ((state == UartState_start) || (state == UartState_data));
+  always @(*) begin
+    done_o = 1'b1;
+    case(state)
+      UartState_idle : begin
+        done_o = 1'b1;
+      end
+      UartState_start : begin
+      end
+      UartState_data : begin
+      end
+      default : begin
+      end
+    endcase
+  end
+
+  always @(*) begin
+    busy_o = 1'b0;
+    case(state)
+      UartState_idle : begin
+        busy_o = 1'b0;
+      end
+      UartState_start : begin
+      end
+      UartState_data : begin
+      end
+      default : begin
+      end
+    endcase
+  end
+
+  assign when_UartTx_l74 = (timerCnt_counter == 10'h0);
+  assign when_UartTx_l79 = (timerCnt_counter == 10'h0);
+  assign when_UartTx_l81 = (3'b111 <= bitIdx);
+  assign when_UartTx_l89 = (timerCnt_counter == 10'h0);
+  always @(posedge clk or posedge reset) begin
+    if(reset) begin
+      state <= UartState_idle;
+      data <= 8'h0;
+      bitIdx <= 3'b000;
+      shiftBitIdx <= 1'b0;
+      timerCnt_counter <= 10'h364;
+    end else begin
+      if(shiftBitIdx) begin
+        bitIdx <= (bitIdx + 3'b001);
+      end
+      timerCnt_counter <= (timerCnt_counter - 10'h001);
+      if(when_UartTx_l48) begin
+        timerCnt_counter <= 10'h364;
+      end else begin
+        if(when_UartTx_l50) begin
+          if(when_UartTx_l51) begin
+            timerCnt_counter <= 10'h364;
+          end
         end
-    end
-
-    assign tx_o = (state == DATA) ? data[bit_idx] : (state == START) ? 0 : 1;
-
-    always @(posedge clk) begin
-        if (!resetn) begin
-            timer_cnt <= CLKS_PER_BIT;
-        end else begin
-            case (state)
-                IDLE:    timer_cnt <= CLKS_PER_BIT;
-                START:   timer_cnt <= (timer_cnt == 1) ? CLKS_PER_BIT : timer_cnt - 1;
-                DATA:    timer_cnt <= (timer_cnt == 0) ? CLKS_PER_BIT : timer_cnt - 1;
-                STOP:    timer_cnt <= timer_cnt - 1;
-                default: timer_cnt <= CLKS_PER_BIT;
-            endcase
+      end
+      case(state)
+        UartState_idle : begin
+          if(e_i) begin
+            data <= d_i;
+            state <= UartState_start;
+          end
         end
+        UartState_start : begin
+          if(when_UartTx_l74) begin
+            state <= UartState_data;
+          end
+        end
+        UartState_data : begin
+          if(when_UartTx_l79) begin
+            shiftBitIdx <= 1'b1;
+            if(when_UartTx_l81) begin
+              state <= UartState_stop;
+            end
+          end else begin
+            shiftBitIdx <= 1'b0;
+          end
+        end
+        default : begin
+          if(when_UartTx_l89) begin
+            state <= UartState_idle;
+          end
+        end
+      endcase
     end
+  end
 
-    always @(*) begin
-        busy_o        = 1;
-        done_o        = 0;
-        shift_bit_idx = 0;
-        case (state)
-            IDLE: begin
-                done_o     = 1;
-                busy_o     = 0;
-                next_state = e_i ? START : IDLE;
-            end
-            /* Start bit. */
-            START: begin
-                next_state = (timer_cnt == 1) ? DATA : START;
-            end
-            DATA: begin
-                shift_bit_idx = (timer_cnt == 0) ? 1 : 0;
-                next_state    = (timer_cnt == 0) ? ((bit_idx < 7) ? DATA : STOP) : DATA;
-            end
-            /* Stop bit. */
-            STOP: begin
-                next_state = (timer_cnt == 0) ? IDLE : STOP;
-            end
-            default:
-                next_state = IDLE;
-        endcase
-    end
+
 endmodule
-

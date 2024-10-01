@@ -16,11 +16,9 @@ module uart_loopback #(
     wire rx_done_o;
     wire [7:0] rx_d_o;
 
-    uart_tx #(
-        .CLKS_PER_BIT(CLKS_PER_BIT)
-    ) uart_tx (
+    uart_tx uart_tx (
         .clk(clk),
-        .resetn(resetn),
+        .reset(!resetn),
 
         .e_i(rx_done_o),
         .d_i(data),

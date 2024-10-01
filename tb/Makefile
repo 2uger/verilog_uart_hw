@@ -1,7 +1,7 @@
 # Makefile
 
 # defaults
-SIM ?= icarus
+SIM ?= verilator
 TOPLEVEL_LANG ?= verilog
 WAVES=1
 
