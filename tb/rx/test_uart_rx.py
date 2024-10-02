@@ -2,7 +2,7 @@ import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge 
 
-from uart_model.uart import UartSink
+from uart_model.uart import UartSource
 
 CLKS_PER_BIT = None
 
@@ -15,18 +15,17 @@ async def reset_dut(dut):
     await RisingEdge(dut.clk)
 
 @cocotb.test()
-async def uart_tx_test(dut):
+async def uart_rx_test(dut):
     global CLKS_PER_BIT
     CLKS_PER_BIT = dut.CLKS_PER_BIT.value
 
     cocotb.start_soon(Clock(dut.clk, 1, units='ns').start())
     await reset_dut(dut)
 
-    uart_sink = UartSink(dut.tx_o, baud=1e9 / CLKS_PER_BIT, bits=8)
+    uart_source = UartSource(dut.rx_i, baud=1e9 / CLKS_PER_BIT, bits=8)
 
     for s in "Hello world from UART!":
-        dut.d_i.value = ord(s)
-        dut.e_i.value = 1
-        res = await uart_sink.read()
-        assert res.decode() == s
+        await uart_source.write([ord(s)])
+        await uart_source.wait()
+        assert s == chr(dut.d_o.value.integer)
 

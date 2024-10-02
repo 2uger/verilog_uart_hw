@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module uart_rx #(
-    parameter CLKS_PER_BIT = 20
+    parameter CLKS_PER_BIT = 868
 ) (input clk,
    input resetn,
 
@@ -38,7 +38,7 @@ module uart_rx #(
         if (!resetn) begin
             d_o <= 0;
         end else begin
-            if ((state == DATA) && shift_bit_idx && (bit_idx != 7)) d_o[bit_idx] <= rx_i;
+            if ((state == DATA) && shift_bit_idx && (bit_idx <= 7)) d_o[bit_idx] <= rx_i;
         end
     end
 
@@ -48,8 +48,8 @@ module uart_rx #(
         end else begin
             case (state)
                 IDLE:    timer_cnt <= CLKS_PER_BIT;
-                START:   timer_cnt <= (timer_cnt <= (CLKS_PER_BIT-1) / 2) ? CLKS_PER_BIT : timer_cnt - 1;
-                DATA:    timer_cnt <= (timer_cnt == 0) ? CLKS_PER_BIT : timer_cnt - 1;
+                START:   timer_cnt <= (timer_cnt <= ((CLKS_PER_BIT / 2) + 1)) ? CLKS_PER_BIT : timer_cnt - 1;
+                DATA:    timer_cnt <= (timer_cnt == 1) ? CLKS_PER_BIT : timer_cnt - 1;
                 STOP:    timer_cnt <= timer_cnt - 1;
                 default: timer_cnt <= CLKS_PER_BIT;
             endcase
@@ -63,20 +63,24 @@ module uart_rx #(
         case (state)
             IDLE: begin
                 busy_o     = 0;
-                next_state = (rx_i == 0) ? START : IDLE;
+                if (rx_i == 0) begin
+                    next_state = START;
+                end else begin
+                    next_state = IDLE;
+                end
             end
             START: begin
                 /* Check in the middle of the byte. */
-                next_state = (timer_cnt <= (CLKS_PER_BIT-1) / 2) ? ((rx_i == 0) ? DATA : IDLE) : START;
+                next_state = (timer_cnt <= ((CLKS_PER_BIT / 2) + 1)) ? ((rx_i == 0) ? DATA : IDLE) : START;
             end
             DATA: begin
-                shift_bit_idx = (timer_cnt == 0) ? 1 : 0;
-                next_state    = (timer_cnt == 0) ? ((bit_idx < 7) ? DATA : STOP) : DATA;
+                shift_bit_idx = (timer_cnt == 1) ? 1 : 0;
+                next_state    = (timer_cnt == 1) ? ((bit_idx < 7) ? DATA : STOP) : DATA;
             end
             STOP: begin
                 /* Wait for stop bit to finish */
-                done_o     = (timer_cnt == 0) ? 1 : 0;
-                next_state = (timer_cnt == 0) ? IDLE : STOP;
+                done_o     = (timer_cnt == 1) ? 1 : 0;
+                next_state = (timer_cnt == 1) ? IDLE : STOP;
             end
             default: begin
                 next_state     = IDLE;
