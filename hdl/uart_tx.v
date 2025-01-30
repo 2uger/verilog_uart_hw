@@ -27,7 +27,7 @@ module uart_tx #(
     reg [2:0] bit_idx = 3'b0;
     reg shift_bit_idx;
 
-    always @(posedge clk) begin
+    always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
             state     <= IDLE;
             bit_idx   <= 0;
@@ -40,7 +40,7 @@ module uart_tx #(
 
     assign tx_o = (state == DATA) ? data[bit_idx] : (state == START) ? 0 : 1;
 
-    always @(posedge clk) begin
+    always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
             timer_cnt <= CLKS_PER_BIT;
         end else begin

@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module uart_loopback #(
-    parameter CLKS_PER_BIT = 868
+    parameter CLKS_PER_BIT = 29
 ) (
     input clk,
     input resetn,
@@ -24,7 +24,7 @@ module uart_loopback #(
         .resetn(resetn),
 
         .e_i(rx_done_o),
-        .d_i(data + 1),
+        .d_i(data),
 
         .tx_o(tx_o),
         .busy_o(tx_busy),

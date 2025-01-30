@@ -24,7 +24,7 @@ module uart_rx #(
     reg [2:0] bit_idx;
     reg shift_bit_idx;
 
-    always @ (posedge clk) begin
+    always @ (posedge clk or negedge resetn) begin
         if (!resetn) begin
             state     <= IDLE;
             bit_idx   <= 0;
@@ -34,7 +34,7 @@ module uart_rx #(
         end
     end
 
-    always @ (posedge clk) begin
+    always @ (posedge clk or negedge resetn) begin
         if (!resetn) begin
             d_o <= 0;
         end else begin
@@ -42,7 +42,7 @@ module uart_rx #(
         end
     end
 
-    always @(posedge clk) begin
+    always @(posedge clk or negedge resetn) begin
         if (!resetn) begin
             timer_cnt <= CLKS_PER_BIT;
         end else begin
